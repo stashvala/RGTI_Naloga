@@ -203,8 +203,10 @@ function readFile(){
 		var text = fileLoadedEvent.target.result;
 
 		parseInput(text);
+		console.log("Kurcina");
 		start();
-	}
+	};
+	fileReader.readAsText(file, "UTF-8");
 }
 
 function parseInput(input){
