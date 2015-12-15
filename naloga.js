@@ -195,17 +195,20 @@ function draw(ctx, vertices, edges){
 	ctx.stroke();
 }
 
-function getInput(url) {
-	var xmlHttp = new XMLHttpRequest();
-	xmlHttp.open("GET", url, false);
-	xmlHttp.send( null );
+function readFile(){
+	var file = document.getElementById("fileInput").files[0];
 
-	return xmlHttp.responseText;
+	var fileReader = new FileReader();
+	fileReader.onload = function(fileLoadedEvent){
+		var text = fileLoadedEvent.target.result;
+
+		parseInput(text);
+		start();
+	}
 }
 
-function parseInput(){
-	var response = getInput("http://localhost:8000/vhod.txt");
-    var lines = response.split("\n");
+function parseInput(input){
+    var lines = input.split("\n");
 	
 	var vex_cnt_i = 0;
 	var vex_cnt_j = -1;
