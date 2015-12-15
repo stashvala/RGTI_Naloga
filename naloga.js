@@ -259,7 +259,6 @@ function start(){
 				 2, 3, 4];
 	*/
 	
-	parseInput();
 	debugPrintArr(vertices);
 	debugPrintMat(edges);
 	
