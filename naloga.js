@@ -3,7 +3,8 @@ var d = 4; // d je dolzina med lokacijo koordinatnega sistema pogleda in projeci
 var cameraLocation = [0.0, 0.0, -8.0];
 
 // Buffers
-var pyramidVertexPositionBuffer;
+var vertices = [];
+var edges = [];
 
 // Model, view, projection and transformation matrices
 var mMatrix = mat4.create();
@@ -16,7 +17,7 @@ var canvas_w;
 var canvas_h;
 
 // Drawing
-var extend = 100;
+var extend = 50;
 
 // https://en.wikipedia.org/wiki/Rotation_matrix
 
@@ -82,7 +83,7 @@ function perspective(d){ // primerna vrednost je d=4
 	return mat;
 }
 
-
+// needed for later use of event listeners
 function transformModel(){
 
 }
@@ -136,8 +137,20 @@ function prepareVertices(v){
 		newVex[i][3] = 1;
 	}
 	
-	debugPrintArr(newVex);
-	return newVex;
+	//debugPrintArr(newVex);
+	
+	// convert to 1d arr for easier drawing
+	vex = [];
+	cnt = 0;
+	for(i = 0; i < newVex.length; ++i){
+		for(j = 0; j < newVex[i].length; ++j){
+			vex[cnt] =  newVex[i][j];
+			++cnt;
+		}
+	}
+	
+	debugPrintMat(vex);
+	return vex;
 }
 
 function debugPrintArr(arr){
@@ -161,48 +174,91 @@ function debugPrintMat(mat){
 			var str = "[ ";
 		}
 	}		
-	//console.log(str);
 }
 
 // ctx - context
 function draw(ctx, vertices, edges){
 	 
-	 // set context
-	 ctx.beginPath();
-	 ctx.lineWidth = "1";
-	 ctx.strokeStyle = "black";
-	 ctx.clearRect(640, -360, -canvas_w, canvas_h);
-	 
-	 // prepare vertices
-	 vertices = prepareVertices(vertices);
-	 for(i = 0; i < edges.length -1; i += 2){ //:TODO: check if i += 2 is ok
-		var v = edges[i] - 1;
-		//console.log("*v="+v+"*");
-		//console.log("from ("+vertices[v][0]+", "+vertices[v][1]+")");
-		ctx.moveTo(vertices[v][0] * extend, vertices[v][1] * extend);
-		v = edges[i+1] - 1;
-		//console.log("*v="+v+"*");
-		//console.log("to ("+vertices[v][0]+", "+vertices[v][1]+")");
-		ctx.lineTo(vertices[v][0] * extend, vertices[v][1] * extend);
-	 }
-	 
-	 ctx.stroke();
+	// set context
+	ctx.beginPath();
+	ctx.lineWidth = "1";
+	ctx.tr;
+	ctx.strokeStyle = "black";
+
+	// prepare vertices
+	v = prepareVertices(vertices);
+	for (i =0; i < edges.length; i = i+2){       
+		ctx.moveTo(v[(edges[i]-1)*3] * extend, v[((edges[i]-1)*3)+1] * extend);
+		ctx.lineTo(v[(edges[i+1]-1)*3] * extend, v[((edges[i+1]-1)*3)+1] * extend)
+	}
+
+	ctx.stroke();
 }
 
+function getInput(url) {
+	var xmlHttp = new XMLHttpRequest();
+	xmlHttp.open("GET", url, false);
+	xmlHttp.send( null );
+
+	return xmlHttp.responseText;
+}
+
+function parseInput(){
+	var response = getInput("http://localhost:8000/vhod.txt");
+    var lines = response.split("\n");
+	
+	var vex_cnt_i = 0;
+	var vex_cnt_j = -1;
+	var edg_cnt = -1;
+    for(i = 0; i < lines.length; ++i){
+		
+		console.log(lines[i]);
+        
+		if(lines[i].charAt(0) == "v"){
+           
+            var vexes = lines[i].split(" ");
+			
+			//console.log(vexes);
+            			
+			// parse vertices
+			vertices[vex_cnt_i] = [];
+			vertices[vex_cnt_i][++vex_cnt_j] = parseFloat(vexes[1]);
+			vertices[vex_cnt_i][++vex_cnt_j] = parseFloat(vexes[2]);
+			vertices[vex_cnt_i][++vex_cnt_j] = parseFloat(vexes[3]);
+			vertices[vex_cnt_i][++vex_cnt_j] = 1.0; //add 1.0 because it's a homogene matrix
+			vex_cnt_i++;
+        }
+		else if(lines[i].charAt(0) == "f"){
+           
+			var edg = lines[i].split(" ");
+            
+
+        }
+		else if(lines[i].charAt(0) === " " ||
+				lines[i].charAt(0) === "\n") { ; }
+		else{
+			alert("Nepoznan zacetni znak: " + lines[i].charAt(0));
+		}
+    }
+}
 
 function start(){
 	
 	//:TODO: read from file
-	// we add 1.0 to each line because
-	var vertices = [[0.0, 0.0, 0.0, 1.0], 
-				    [1.0, 0.0, 0.0, 1.0],
+	// we add 1.0 to each line because it' a homogene matrix
+	/*  vertices = [[0.0, 0.0, 0.0, 1.0], 
+					[1.0, 0.0, 0.0, 1.0],
 				    [0.0, 1.0, 0.0, 1.0],
 				    [0.0, 0.0, 1.0, 1.0]];
-	var edges = [1, 3, 2, 
+	    edges = [1, 3, 2, 
 				 1, 2, 4,
 				 1, 4, 3,
-				 1, 4, 3,
 				 2, 3, 4];
+	*/
+	
+	parseInput();
+	debugPrintArr(vertices);
+	debugPrintMat(edges);
 	
 	var canvas = document.getElementById("mycanvas");
 	canvas_w = canvas.width;
