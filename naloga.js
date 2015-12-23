@@ -5,6 +5,16 @@ var cameraLocation = [0.0, 0.0, -8.0];
 // Buffers
 var vertices = [];
 var edges = [];
+var normals = [];
+
+var Ka_rgb = [];
+var Kd_rgb = [];
+var Ks_rgb = [];
+var Ns;
+
+var lights = [];
+
+
 
 // Model, view, projection and transformation matrices
 var mMatrix = mat4.create();
@@ -153,7 +163,8 @@ function prepareVertices(v){
 	return vex;
 }
 
-function debugPrintArr(arr){
+function debugPrintArr(name, arr){
+	console.log(name+":");
 	for(i = 0; i < arr.length; ++i){
 		var str = "[ ";
 		for(j = 0; j < arr[i].length; ++j){
@@ -162,18 +173,21 @@ function debugPrintArr(arr){
 		str += "]";
 		console.log(str);
 	}
+	console.log("\n");
 }
 
-function debugPrintMat(mat){
+function debugPrintMat(name, mat){
+	console.log(name+":");
 	var str = "[ ";
-	for(i = 0; i < 16; ++i){
+	for(i = 0; i < mat.length; ++i){
 		str += mat[i] + " ";
 		if((i+1) % 4 === 0){
 			str += "]";
 			console.log(str);
 			var str = "[ ";
 		}
-	}		
+	}	
+	console.log("\n");
 }
 
 // ctx - context
@@ -203,7 +217,6 @@ function readFile(){
 		var text = fileLoadedEvent.target.result;
 
 		parseInput(text);
-		console.log("Kurcina");
 		start();
 	};
 	fileReader.readAsText(file, "UTF-8");
@@ -214,8 +227,11 @@ function parseInput(input){
 	
 	var vex_cnt_i = 0;
 	var vex_cnt_j = -1;
+	var nor_cnt = 0;
+
 	var edg_cnt = -1;
-    for(i = 0; i < lines.length; ++i){
+	var li_cnt = 0;
+    for(var i = 0; i < lines.length; ++i){
 		
 		console.log(lines[i]);
         
@@ -224,25 +240,72 @@ function parseInput(input){
             var vexes = lines[i].split(" ");
 			
 			//console.log(vexes);
-            			
+           	
+           	var vex_cnt_j = -1;
+           	vertices.push([]);
+
 			// parse vertices
-			vertices[vex_cnt_i] = [];
 			vertices[vex_cnt_i][++vex_cnt_j] = parseFloat(vexes[1]);
 			vertices[vex_cnt_i][++vex_cnt_j] = parseFloat(vexes[2]);
 			vertices[vex_cnt_i][++vex_cnt_j] = parseFloat(vexes[3]);
 			vertices[vex_cnt_i][++vex_cnt_j] = 1.0; //add 1.0 because it's a homogene matrix
+			
+			var nor_cnt_j = -1; 
+			normals.push([]);
+
+			normals[vex_cnt_i][++nor_cnt_j] = parseFloat(vexes[4]);
+			normals[vex_cnt_i][++nor_cnt_j] = parseFloat(vexes[5]);
+			normals[vex_cnt_i][++nor_cnt_j] = parseFloat(vexes[6]);
+
 			vex_cnt_i++;
         }
 		else if(lines[i].charAt(0) == "f"){
-           
 			var edg = lines[i].split(" ");
-            
 
+			edges[++edg_cnt] = parseFloat(edg[1]);
+			edges[++edg_cnt] = parseFloat(edg[2]);
+            edges[++edg_cnt] = parseFloat(edg[3]);
         }
-		else if(lines[i].charAt(0) === " " ||
-				lines[i].charAt(0) === "\n") { ; }
+        else if(lines[i].charAt(0) == "m"){
+        	var material = lines[i].split(" ");
+
+        	Ka_rgb[0] = parseFloat(material[1]);
+        	Ka_rgb[1] = parseFloat(material[2]);
+        	Ka_rgb[2] = parseFloat(material[3]);
+
+        	Kd_rgb[0] = parseFloat(material[4]);
+        	Kd_rgb[1] = parseFloat(material[5]);
+        	Kd_rgb[2] = parseFloat(material[6]);
+
+        	Ks_rgb[0] = parseFloat(material[7]);
+        	Ks_rgb[1] = parseFloat(material[8]);
+        	Ks_rgb[2] = parseFloat(material[9]);
+
+        	Ns = parseFloat(material[10]);
+        }
+        else if(lines[i].charAt(0) == "l"){
+        	var li = lines[i].split(" ");
+
+        	lights.push([]);
+        	var L_xyz = [];
+			var L_rgb = [];
+
+        	L_xyz[0] = parseFloat(li[1]);
+        	L_xyz[1] = parseFloat(li[2]);
+        	L_xyz[2] = parseFloat(li[3]);
+
+        	L_rgb[0] = parseFloat(li[4]);
+        	L_rgb[1] = parseFloat(li[5]);
+        	L_rgb[2] = parseFloat(li[6]); 
+
+        	lights[li_cnt].push(L_xyz);
+			lights[li_cnt].push(L_rgb);
+
+			++li_cnt;
+        }
+		// other chars
 		else{
-			alert("Nepoznan zacetni znak: " + lines[i].charAt(0));
+			//alert("Nepoznan zacetni znak: " + lines[i].charAt(0));
 		}
     }
 }
@@ -261,9 +324,28 @@ function start(){
 				 2, 3, 4];
 	*/
 	
-	debugPrintArr(vertices);
-	debugPrintMat(edges);
+	console.log("\n\n");
+	//debugPrintMat("Ka_rgb" ,Ka_rgb);
+	//debugPrintMat("Kd_rgb", Kd_rgb);
+	//debugPrintMat("Ks_rgb", Ks_rgb);
+	console.log("\nKa_rgb: "+Ka_rgb);
+	console.log("\nKa_rgb: "+Kd_rgb);
+	console.log("\nKa_rgb: "+Ks_rgb);
+	console.log("\nNs: "+Ns);
+
+
+	debugPrintArr("vertices", vertices);
+	debugPrintMat("edges", edges);
+	debugPrintArr("normals", normals);
 	
+
+	console.log("\nlight 1: "+lights[0][0]+" | "+lights[0][1]);
+	console.log("\nlight 2: "+lights[1][0]+" | "+lights[1][1]);
+	//debugPrintMat("L_xyz", L_xyz);
+	//debugPrintMat("L_rgb", L_rgb);
+
+
+	/*
 	var canvas = document.getElementById("mycanvas");
 	canvas_w = canvas.width;
 	canvas_h = canvas.height;
@@ -276,6 +358,6 @@ function start(){
 	//transformModel();
 	setView();
 	
-	draw(ctx, vertices, edges);
+	draw(ctx, vertices, edges);*/
 	
 }
