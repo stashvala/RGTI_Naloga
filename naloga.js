@@ -296,8 +296,6 @@ function parseInput(input){
 		if(lines[i].charAt(0) == "v"){
            
             var vexes = lines[i].split(" ");
-			
-			//console.log(vexes);
            	
            	var vex_cnt_j = -1;
            	vertices.push([]);
