@@ -168,14 +168,14 @@ function refreshColors(){
 		var vex = vec3.fromValues(vertices[i][0], vertices[i][1], vertices[i][2]);
 
 		var color = vec3.create();
-		for(var li = 0; l < lights.length; ++l){
+		for(var li = 0; li < lights.length; ++li){
 			var Lm_n = vec3.create();
 			var light_pos = vec3.fromValues(lights[li][0][0], lights[li][0][1], lights[li][0][2]);
 			var normal_vec = vec3.fromValues(normals[i][0], normals[i][1], normals[i, 2]);
 
 			//Kd * (Li * n) = first_part
 			var light_vec = vec3.create();
-			vec3.subtract(light_vec, vex, lights_pos);
+			vec3.subtract(light_vec, vex, light_pos);
 			vec3.multiply(Lm_n, light_vec, normal_vec);
 			vec3.multiply(Lm_n, Lm_n, Kd_rgb);
 
@@ -295,7 +295,7 @@ function parseInput(input){
            
             var vexes = lines[i].split(" ");
 			
-			//console.log(vexes);
+			console.log(vexes);
            	
            	var vex_cnt_j = -1;
            	vertices.push([]);
@@ -312,6 +312,8 @@ function parseInput(input){
 			normals[vex_cnt_i][++nor_cnt_j] = parseFloat(vexes[4]);
 			normals[vex_cnt_i][++nor_cnt_j] = parseFloat(vexes[5]);
 			normals[vex_cnt_i][++nor_cnt_j] = parseFloat(vexes[6]);
+
+			console.log("normal " + vex_cnt_i +": "+normals[vex_cnt_i]);
 
 			vex_cnt_i++;
         }
