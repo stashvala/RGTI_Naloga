@@ -115,8 +115,6 @@ function prepareVertices(v){
 	//update tMatrix
 	updateTransformMatrix();
 	
-	//debugPrintMat(tMatrix);
-	
 	// multiply vertices with tMatrix
 	var newVex = [];
 	for(i = 0; i < v.length; ++i){
@@ -135,8 +133,6 @@ function prepareVertices(v){
 			}
 		}
 	}
-	
-	//debugPrintArr(newVex);
 	
 	// normalize with 'w'
 	for(i = 0; i < newVex.length; ++i){
@@ -161,7 +157,7 @@ function prepareVertices(v){
 		}
 	}
 	
-	debugPrintMat(vex);
+	//debugPrintMat(vex);
 	return vex;
 }
 
@@ -257,6 +253,8 @@ function draw(ctx, vertices, edges){
 	ctx.tr;
 	ctx.strokeStyle = "black";
 
+	refreshColors();
+
 	// prepare vertices
 	v = prepareVertices(vertices);
 	for (i =0; i < edges.length; i = i+2){       
@@ -291,11 +289,13 @@ function parseInput(input){
 	var li_cnt = 0;
     for(var i = 0; i < lines.length; ++i){
 		
-		console.log(lines[i]);
+		//console.log(lines[i]);
         
 		if(lines[i].charAt(0) == "v"){
            
             var vexes = lines[i].split(" ");
+			
+			//console.log(vexes);
            	
            	var vex_cnt_j = -1;
            	vertices.push([]);
@@ -381,10 +381,10 @@ function start(){
 	debugPrintArr("vertices", vertices);
 	debugPrintMat("edges", edges);
 	debugPrintArr("normals", normals);
-	
+	*/
 	console.log("\nlight 1: "+lights[0][0]+" | "+lights[0][1]);
 	console.log("\nlight 2: "+lights[1][0]+" | "+lights[1][1]);
-	
+		
 
 	var canvas = document.getElementById("mycanvas");
 	canvas_w = canvas.width;
@@ -398,12 +398,12 @@ function start(){
 	//transformModel();
 	setView();
 
-	draw(ctx, vertices, edges);*/
+	draw(ctx, vertices, edges);
 
+	/*
 	//var a = vec3.create();
 	//var b = vec3.create();
 
-	/*
 	// Vector operations example:
 	var a = vec3.fromValues(1, 2, 3);
 	var b = vec3.fromValues(0, 1, 0);
