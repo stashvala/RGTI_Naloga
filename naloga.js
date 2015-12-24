@@ -11,11 +11,10 @@ var verticesColors = [];
 var Ka_rgb = vec3.create();
 var Kd_rgb = vec3.create();
 var Ks_rgb = vec3.create();
-var Ns;
 
 var lights = [];
 
-var shine_constant = 0.70;
+var shine_constant;
 
 
 // Model, view, projection and transformation matrices
@@ -114,7 +113,11 @@ function prepareVertices(v){
 	
 	//update tMatrix
 	updateTransformMatrix();
-	
+
+	for(i = 0; i < tMatrix.length; ++i){
+		console.log(i+": "+tMatrix[i]);
+	}
+	console.log("\n");
 	// multiply vertices with tMatrix
 	var newVex = [];
 	for(i = 0; i < v.length; ++i){
@@ -132,6 +135,10 @@ function prepareVertices(v){
 				cnt++;
 			}
 		}
+	}
+
+	for(i = 0; i < v.length; ++i){
+		console.log("vex "+i+": "+ v[i]);
 	}
 	
 	// normalize with 'w'
@@ -171,7 +178,7 @@ function refreshColors(){
 		for(var li = 0; li < lights.length; ++li){
 			var Lm_n = vec3.create();
 			var light_pos = vec3.fromValues(lights[li][0][0], lights[li][0][1], lights[li][0][2]);
-			var normal_vec = vec3.fromValues(normals[i][0], normals[i][1], normals[i, 2]);
+			var normal_vec = vec3.fromValues(normals[i][0], normals[i][1], normals[i][2]);
 
 			//Kd * (Li * n) = first_part
 			var light_vec = vec3.create();
@@ -184,7 +191,7 @@ function refreshColors(){
 			vec3.multiply(Rm_V, light_vec, normal_vec);
 			vec3.multiply(Rm_V, Rm_V, normal_vec);
 			var two = vec3.fromValues(2, 2, 2);
-			vec3.multiply(Rm_V. Rm_V, two);
+			vec3.multiply(Rm_V, Rm_V, two);
 			vec3.subtract(Rm_V, Rm_V, light_vec);
 	
 			// Rm * V
@@ -200,11 +207,11 @@ function refreshColors(){
 			vec3.multiply(Rm_V, Rm_V, Ks_rgb);			
 
 			// first_part + second_part = sum
-			var eq = create.vec3();
-			vec3.add(eq, Lm_n, h)
+			var eq = vec3.create();
+			vec3.add(eq, Lm_n, Rm_V);
 
 			// Ci * sum
-			var light_col =  vec3.fromValues(lights[li][1][0], lights[li][1][1], lights[li][1][2])
+			var light_col =  vec3.fromValues(lights[li][1][0], lights[li][1][1], lights[li][1][2]);
 			vec3.multiply(eq, light_col, eq);
 
 			//r = lights[li][1][0]*(Kd_rgb[0]*(rLm*n[i][0])+Ks_rgb[0]*Math.pow((), shine_constant));
@@ -244,12 +251,20 @@ function debugPrintMat(name, mat){
 	console.log("\n");
 }
 
+function rgb (r, g, b) {
+	r = Math.floor(r);
+	g = Math.floor(g);
+	b = Math.floor(b);
+
+	return ["rgb(", r, ",", g, ",", b, ")"].join("");
+}
+
 // ctx - context
 function draw(ctx, vertices, edges){
 	 
 	// set context
 	ctx.beginPath();
-	ctx.lineWidth = "1";
+	ctx.lineWidth = 3;
 	ctx.tr;
 	ctx.strokeStyle = "black";
 
@@ -257,9 +272,38 @@ function draw(ctx, vertices, edges){
 
 	// prepare vertices
 	v = prepareVertices(vertices);
-	for (i =0; i < edges.length; i = i+2){       
-		ctx.moveTo(v[(edges[i]-1)*3] * extend, v[((edges[i]-1)*3)+1] * extend);
-		ctx.lineTo(v[(edges[i+1]-1)*3] * extend, v[((edges[i+1]-1)*3)+1] * extend)
+	console.log("DEBUG: "+v);
+	for (i =0; i < edges.length; i = i+2){
+		var vertex1 = (edges[i]-1)*3;
+		var vertex2 = (edges[i+1]-1)*3;
+
+		var x1 = v[vertex1] * extend;
+		var y1 = v[vertex2+1] * extend;
+
+		var x2 = v[vertex1] * extend;
+		var y2 = v[vertex2+1] * extend;
+
+		var grad = ctx.createLinearGradient(x1, y1, x2, y2);
+		
+		console.log("\ne1: "+vertex1);
+		console.log("\ne2: "+vertex2);
+
+		var color1 = vec3.create();
+		color1 = verticesColors[edges[i]-1];
+		var color2 = vec3.create();
+		color2 = verticesColors[edges[i+1]-1];
+
+		console.log("\ncolor1: "+color1);
+		console.log("color2: "+color2);
+
+		grad.addColorStop(0, rgb(color1[0], color1[1], color1[2]));
+		grad.addColorStop(1, rgb(color2[0], color2[1], color2[2]));
+
+		ctx.moveTo(x1, y1);
+		ctx.lineTo(x2, y2);
+		
+		//ctx.moveTo(v[(edges[i]-1)*3] * extend, v[((edges[i]-1)*3)+1] * extend);
+		//ctx.lineTo(v[(edges[i+1]-1)*3] * extend, v[((edges[i+1]-1)*3)+1] * extend);
 	}
 
 	ctx.stroke();
@@ -295,7 +339,7 @@ function parseInput(input){
            
             var vexes = lines[i].split(" ");
 			
-			console.log(vexes);
+			//console.log(vexes);
            	
            	var vex_cnt_j = -1;
            	vertices.push([]);
@@ -313,7 +357,7 @@ function parseInput(input){
 			normals[vex_cnt_i][++nor_cnt_j] = parseFloat(vexes[5]);
 			normals[vex_cnt_i][++nor_cnt_j] = parseFloat(vexes[6]);
 
-			console.log("normal " + vex_cnt_i +": "+normals[vex_cnt_i]);
+			//console.log("normal " + vex_cnt_i +": "+normals[vex_cnt_i]);
 
 			vex_cnt_i++;
         }
@@ -331,7 +375,8 @@ function parseInput(input){
         	Kd_rgb = vec3.fromValues(parseFloat(material[4]), parseFloat(material[5]), parseFloat(material[6]));
         	Ks_rgb = vec3.fromValues(parseFloat(material[7]), parseFloat(material[8]), parseFloat(material[9]));
 
-        	Ns = parseFloat(material[10]);
+        	//Ns
+        	shine_constant = parseFloat(material[10]);
         }
         else if(lines[i].charAt(0) == "l"){
         	var li = lines[i].split(" ");
@@ -383,10 +428,10 @@ function start(){
 	debugPrintArr("vertices", vertices);
 	debugPrintMat("edges", edges);
 	debugPrintArr("normals", normals);
-	*/
+	
 	console.log("\nlight 1: "+lights[0][0]+" | "+lights[0][1]);
 	console.log("\nlight 2: "+lights[1][0]+" | "+lights[1][1]);
-		
+	*/	
 
 	var canvas = document.getElementById("mycanvas");
 	canvas_w = canvas.width;
