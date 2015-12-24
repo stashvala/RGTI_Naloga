@@ -6,14 +6,16 @@ var cameraLocation = [0.0, 0.0, -8.0];
 var vertices = [];
 var edges = [];
 var normals = [];
+var verticesColors = [];
 
-var Ka_rgb = [];
-var Kd_rgb = [];
-var Ks_rgb = [];
+var Ka_rgb = vec3.create();
+var Kd_rgb = vec3.create();
+var Ks_rgb = vec3.create();
 var Ns;
 
 var lights = [];
 
+var shine_constant = 0.70;
 
 
 // Model, view, projection and transformation matrices
@@ -163,6 +165,62 @@ function prepareVertices(v){
 	return vex;
 }
 
+//https://en.wikipedia.org/wiki/Phong_reflection_model
+function refreshColors(){
+	v_cnt = 0;
+	for(var i = 0; i < vertices.length; ++i){
+		var vex = vec3.fromValues(vertices[i][0], vertices[i][1], vertices[i][2]);
+
+		var color = vec3.create();
+		for(var li = 0; l < lights.length; ++l){
+			var Lm_n = vec3.create();
+			var light_pos = vec3.fromValues(lights[li][0][0], lights[li][0][1], lights[li][0][2]);
+			var normal_vec = vec3.fromValues(normals[i][0], normals[i][1], normals[i, 2]);
+
+			//Kd * (Li * n) = first_part
+			var light_vec = vec3.create();
+			vec3.subtract(light_vec, vex, lights_pos);
+			vec3.multiply(Lm_n, light_vec, normal_vec);
+			vec3.multiply(Lm_n, Lm_n, Kd_rgb);
+
+			// RM = 2 * (Lm * N) * N - Lm
+			var Rm_V = vec3.create();
+			vec3.multiply(Rm_V, light_vec, normal_vec);
+			vec3.multiply(Rm_V, Rm_V, normal_vec);
+			var two = vec3.fromValues(2, 2, 2);
+			vec3.multiply(Rm_V. Rm_V, two);
+			vec3.subtract(Rm_V, Rm_V, light_vec);
+	
+			// Rm * V
+			var cam_vec = vec3.create();
+			var cam_pos = vec3.fromValues(cameraLocation[0], cameraLocation[1], cameraLocation[2]);
+			vec3.subtract(cam_vec, vex, cam_pos);
+			vec3.multiply(Rm_V, Rm_V, cam_vec);
+
+			// (Rm * V) ^ alpha = second_part
+			Rm_V = vec3.fromValues(Math.pow(Rm_V[0], shine_constant), Math.pow(Rm_V[1], shine_constant), Math.pow(Rm_V[2], shine_constant));
+
+			// second_part = second_part * Ks
+			vec3.multiply(Rm_V, Rm_V, Ks_rgb);			
+
+			// first_part + second_part = sum
+			var eq = create.vec3();
+			vec3.add(eq, Lm_n, h)
+
+			// Ci * sum
+			var light_col =  vec3.fromValues(lights[li][1][0], lights[li][1][1], lights[li][1][2])
+			vec3.multiply(eq, light_col, eq);
+
+			//r = lights[li][1][0]*(Kd_rgb[0]*(rLm*n[i][0])+Ks_rgb[0]*Math.pow((), shine_constant));
+			vec3.add(color, color, eq);
+		}
+
+		verticesColors[v_cnt] = color;
+		v_cnt++;
+		
+	}
+}
+
 function debugPrintArr(name, arr){
 	console.log(name+":");
 	for(i = 0; i < arr.length; ++i){
@@ -269,17 +327,9 @@ function parseInput(input){
         else if(lines[i].charAt(0) == "m"){
         	var material = lines[i].split(" ");
 
-        	Ka_rgb[0] = parseFloat(material[1]);
-        	Ka_rgb[1] = parseFloat(material[2]);
-        	Ka_rgb[2] = parseFloat(material[3]);
-
-        	Kd_rgb[0] = parseFloat(material[4]);
-        	Kd_rgb[1] = parseFloat(material[5]);
-        	Kd_rgb[2] = parseFloat(material[6]);
-
-        	Ks_rgb[0] = parseFloat(material[7]);
-        	Ks_rgb[1] = parseFloat(material[8]);
-        	Ks_rgb[2] = parseFloat(material[9]);
+        	Ka_rgb = vec3.fromValues(parseFloat(material[1]), parseFloat(material[2]), parseFloat(material[3]));
+        	Kd_rgb = vec3.fromValues(parseFloat(material[4]), parseFloat(material[5]), parseFloat(material[6]));
+        	Ks_rgb = vec3.fromValues(parseFloat(material[7]), parseFloat(material[8]), parseFloat(material[9]));
 
         	Ns = parseFloat(material[10]);
         }
@@ -324,28 +374,20 @@ function start(){
 				 2, 3, 4];
 	*/
 	
-	console.log("\n\n");
-	//debugPrintMat("Ka_rgb" ,Ka_rgb);
-	//debugPrintMat("Kd_rgb", Kd_rgb);
-	//debugPrintMat("Ks_rgb", Ks_rgb);
+	/*console.log("\n\n");
 	console.log("\nKa_rgb: "+Ka_rgb);
 	console.log("\nKa_rgb: "+Kd_rgb);
 	console.log("\nKa_rgb: "+Ks_rgb);
 	console.log("\nNs: "+Ns);
 
-
 	debugPrintArr("vertices", vertices);
 	debugPrintMat("edges", edges);
 	debugPrintArr("normals", normals);
 	
-
 	console.log("\nlight 1: "+lights[0][0]+" | "+lights[0][1]);
 	console.log("\nlight 2: "+lights[1][0]+" | "+lights[1][1]);
-	//debugPrintMat("L_xyz", L_xyz);
-	//debugPrintMat("L_rgb", L_rgb);
+	
 
-
-	/*
 	var canvas = document.getElementById("mycanvas");
 	canvas_w = canvas.width;
 	canvas_h = canvas.height;
@@ -357,7 +399,18 @@ function start(){
 
 	//transformModel();
 	setView();
-	
+
 	draw(ctx, vertices, edges);*/
-	
+
+	//var a = vec3.create();
+	//var b = vec3.create();
+
+	/*
+	// Vector operations example:
+	var a = vec3.fromValues(1, 2, 3);
+	var b = vec3.fromValues(0, 1, 0);
+
+	var c = vec3.create();
+	vec3.subtract(c, a, b);
+	console.log(a+" - "+b+" = "+c);*/
 }
