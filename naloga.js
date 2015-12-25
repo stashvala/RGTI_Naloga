@@ -28,7 +28,7 @@ var canvas_w;
 var canvas_h;
 
 // Drawing
-var extend = 50;
+var extend = 200;
 
 // https://en.wikipedia.org/wiki/Rotation_matrix
 
@@ -114,31 +114,19 @@ function prepareVertices(v){
 	//update tMatrix
 	updateTransformMatrix();
 
-	for(i = 0; i < tMatrix.length; ++i){
-		console.log(i+": "+tMatrix[i]);
-	}
-	console.log("\n");
 	// multiply vertices with tMatrix
 	var newVex = [];
 	for(i = 0; i < v.length; ++i){
 		newVex[i] = [];
 		var cnt = 0;
-		//console.log("******i = "+i+"******");
 		for(j = 0; j < v[i].length; ++j){
-			//console.log("--j = "+j+"--");
 			newVex[i][j] = 0;
 			for(k = 0; k < v[i].length; ++k){
-				//newVex[i][j] +=  v[i][k] * tMatrix[j][k];
-				//console.log("newVex["+i+"]["+j+"] += v["+i+"]["+k+"] * tMatrix["+cnt+"]");
-				//console.log("v = "+v[i][k]+", tMat[cnt] = "+tMatrix[cnt]); 
 				newVex[i][j] +=  v[i][k] * tMatrix[cnt];
 				cnt++;
 			}
 		}
-	}
-
-	for(i = 0; i < v.length; ++i){
-		console.log("vex "+i+": "+ v[i]);
+		// console.log("vex "+i+": "+ newVex[i]);
 	}
 	
 	// normalize with 'w'
@@ -176,22 +164,23 @@ function refreshColors(){
 
 		var color = vec3.create();
 		for(var li = 0; li < lights.length; ++li){
-			var Lm_n = vec3.create();
-			var light_pos = vec3.fromValues(lights[li][0][0], lights[li][0][1], lights[li][0][2]);
+			
 			var normal_vec = vec3.fromValues(normals[i][0], normals[i][1], normals[i][2]);
-
-			//Kd * (Li * n) = first_part
+			var light_pos = vec3.fromValues(lights[li][0][0], lights[li][0][1], lights[li][0][2]);
 			var light_vec = vec3.create();
 			vec3.subtract(light_vec, vex, light_pos);
+			
+			//Kd * (Li * n) = first_part
+			var Lm_n = vec3.create();
 			vec3.multiply(Lm_n, light_vec, normal_vec);
 			vec3.multiply(Lm_n, Lm_n, Kd_rgb);
 
-			// RM = 2 * (Lm * N) * N - Lm
+			// Rm = 2 * (Lm * N) * N - Lm
 			var Rm_V = vec3.create();
 			vec3.multiply(Rm_V, light_vec, normal_vec);
-			vec3.multiply(Rm_V, Rm_V, normal_vec);
 			var two = vec3.fromValues(2, 2, 2);
 			vec3.multiply(Rm_V, Rm_V, two);
+			vec3.multiply(Rm_V, Rm_V, normal_vec);
 			vec3.subtract(Rm_V, Rm_V, light_vec);
 	
 			// Rm * V
@@ -200,10 +189,8 @@ function refreshColors(){
 			vec3.subtract(cam_vec, vex, cam_pos);
 			vec3.multiply(Rm_V, Rm_V, cam_vec);
 
-			// (Rm * V) ^ alpha = second_part
+			// (Rm * V) ^ alpha * Ks = second_part
 			Rm_V = vec3.fromValues(Math.pow(Rm_V[0], shine_constant), Math.pow(Rm_V[1], shine_constant), Math.pow(Rm_V[2], shine_constant));
-
-			// second_part = second_part * Ks
 			vec3.multiply(Rm_V, Rm_V, Ks_rgb);			
 
 			// first_part + second_part = sum
@@ -211,7 +198,7 @@ function refreshColors(){
 			vec3.add(eq, Lm_n, Rm_V);
 
 			// Ci * sum
-			var light_col =  vec3.fromValues(lights[li][1][0], lights[li][1][1], lights[li][1][2]);
+			var light_col = vec3.fromValues(lights[li][1][0], lights[li][1][1], lights[li][1][2]);
 			vec3.multiply(eq, light_col, eq);
 
 			//r = lights[li][1][0]*(Kd_rgb[0]*(rLm*n[i][0])+Ks_rgb[0]*Math.pow((), shine_constant));
@@ -266,44 +253,50 @@ function draw(ctx, vertices, edges){
 	ctx.beginPath();
 	ctx.lineWidth = 3;
 	ctx.tr;
-	ctx.strokeStyle = "black";
+	//ctx.fillStyle = "black";
 
 	refreshColors();
 
 	// prepare vertices
 	v = prepareVertices(vertices);
-	console.log("DEBUG: "+v);
-	for (i =0; i < edges.length; i = i+2){
-		var vertex1 = (edges[i]-1)*3;
-		var vertex2 = (edges[i+1]-1)*3;
+	// console.log("vector: "+v);
+
+	for (i = 0; i < edges.length; i = i+2){
+		var vertex1 = (edges[i]-1)*4;
+		var vertex2 = (edges[i+1]-1)*4;
 
 		var x1 = v[vertex1] * extend;
-		var y1 = v[vertex2+1] * extend;
+		var y1 = v[vertex1+1] * extend;
 
-		var x2 = v[vertex1] * extend;
+		var x2 = v[vertex2] * extend;
 		var y2 = v[vertex2+1] * extend;
+
+		// console.log(i+": x = "+x1+", y = "+y1);
+  		// console.log(i+1+": x = "+x2+", y = "+y2);
 
 		var grad = ctx.createLinearGradient(x1, y1, x2, y2);
 		
-		console.log("\ne1: "+vertex1);
-		console.log("\ne2: "+vertex2);
+		// console.log("\ne1: "+vertex1);
+		// console.log("\ne2: "+vertex2);
 
 		var color1 = vec3.create();
 		color1 = verticesColors[edges[i]-1];
 		var color2 = vec3.create();
 		color2 = verticesColors[edges[i+1]-1];
 
-		console.log("\ncolor1: "+color1);
-		console.log("color2: "+color2);
+		// console.log("\ncolor1: "+color1);
+		// console.log("color2: "+color2);
 
 		grad.addColorStop(0, rgb(color1[0], color1[1], color1[2]));
 		grad.addColorStop(1, rgb(color2[0], color2[1], color2[2]));
 
+		ctx.strokeStyle = grad;
+
 		ctx.moveTo(x1, y1);
 		ctx.lineTo(x2, y2);
 		
-		//ctx.moveTo(v[(edges[i]-1)*3] * extend, v[((edges[i]-1)*3)+1] * extend);
-		//ctx.lineTo(v[(edges[i+1]-1)*3] * extend, v[((edges[i+1]-1)*3)+1] * extend);
+		ctx.stroke();
+		
 	}
 
 	ctx.stroke();
