@@ -7,12 +7,11 @@ var vertices = [];
 var edges = [];
 var normals = [];
 var verticesColors = [];
+var lights = [];
 
 var Ka_rgb = vec3.create();
 var Kd_rgb = vec3.create();
 var Ks_rgb = vec3.create();
-
-var lights = [];
 
 var shine_constant;
 
@@ -156,12 +155,6 @@ function prepareVertices(v){
 	return vex;
 }
 
-function normalizeVector(vec){
-	var length = vec3.length(vec);
-	var normalized = vec3.fromValues(vec[0]/length, vec[1]/length, vec[2]/length);
-
-	return normalized;
-}
 
 //https://en.wikipedia.org/wiki/Phong_reflection_model
 function refreshColors(){
@@ -173,47 +166,59 @@ function refreshColors(){
 		for(var li = 0; li < lights.length; ++li){
 			
 			var normal_vec = vec3.fromValues(normals[i][0], normals[i][1], normals[i][2]);
+			
 			var light_pos = vec3.fromValues(lights[li][0][0], lights[li][0][1], lights[li][0][2]);
 			var light_vec = vec3.create();
-			vec3.subtract(light_vec, vex_pos, light_pos);
-			light_vec = normalizeVector(light_vec); // normalize
-			normal_vec = normalizeVector(normal_vec); // normalize
+			vec3.subtract(light_vec, light_pos, vex_pos);
 			
-			//Kd * (Li * n) = first_part
-			var Lm_n = vec3.create();
-			vec3.multiply(Lm_n, light_vec, normal_vec);
-			vec3.multiply(Lm_n, Lm_n, Kd_rgb);
+			vec3.normalize(light_vec, light_vec); // normalize
+			vec3.normalize(normal_vec, normal_vec); // normalize
+			
+			//Kd * (Li dot N) = first_part
+			// var Lm_n = vec3.create();
+			// vec3.multiply(Lm_n, light_vec, normal_vec);
+			// vec3.multiply(Lm_n, Lm_n, Kd_rgb);
 
-			// Rm = 2 * (Lm * N) * N - Lm
-			var Rm_V = vec3.create();
-			vec3.multiply(Rm_V, light_vec, normal_vec);
-			var two = vec3.fromValues(2, 2, 2);
-			vec3.multiply(Rm_V, Rm_V, two);
-			vec3.multiply(Rm_V, Rm_V, normal_vec);
-			vec3.subtract(Rm_V, Rm_V, light_vec);
-			Rm_V = normalizeVector(Rm_V); // normalize
+			var Lm_N = vec3.dot(light_vec, normal_vec);
+			var Lm_N_Kd = vec3.create();
+			vec3.scale(Lm_N_Kd, Kd_rgb, Lm_N);
+
+			// Rm = 2 * (Lm dot N) * N - Lm
+			// var Rm_V = vec3.create();
+			// vec3.multiply(Rm_V, light_vec, normal_vec);
+			// var two = vec3.fromValues(2, 2, 2);
+			// vec3.multiply(Rm_V, Rm_V, two);
+			// vec3.multiply(Rm_V, Rm_V, normal_vec);
+			// vec3.subtract(Rm_V, Rm_V, light_vec);
+			// vec3.normalize(Rm_V, Rm_V) // normalize
+
+			var Rm = vec3.create();
+			vec3.scale(Rm, normal_vec, (2 * Lm_N));
+			vec3.subtract(Rm, Rm, light_vec);
+			vec3.normalize(Rm, Rm); // normalize
 	
-			// Rm * V
+			// V
 			var cam_vec = vec3.create();
 			var cam_pos = vec3.fromValues(cameraLocation[0], cameraLocation[1], cameraLocation[2]);
-			vec3.subtract(cam_vec, vex_pos, cam_pos);
-			cam_vec = normalizeVector(cam_vec); //normalize
-			vec3.multiply(Rm_V, Rm_V, cam_vec);
-
-			// (Rm * V) ^ alpha * Ks = second_part
-			Rm_V = vec3.fromValues(Math.pow(Rm_V[0], shine_constant), Math.pow(Rm_V[1], shine_constant), Math.pow(Rm_V[2], shine_constant));
-			vec3.multiply(Rm_V, Rm_V, Ks_rgb);			
+			vec3.subtract(cam_vec, cam_pos, vex_pos);
+			vec3.normalize(cam_vec, cam_vec); // normalize
+			
+			// (Rm dot V) ^ alpha * Ks = second_part
+			var Rm_V = vec3.dot(Rm, cam_vec);
+			Rm_V = Math.pow(Rm_V, shine_constant);
+			var Rm_V_Ks = vec3.create();
+			vec3.scale(Rm_V_Ks, Ks_rgb, Rm_V);			
 
 			// first_part + second_part = sum
-			var eq = vec3.create();
-			vec3.add(eq, Lm_n, Rm_V);
+			var equation = vec3.create();
+			vec3.add(equation, Lm_N_Kd, Rm_V_Ks);
 
 			// Ci * sum
 			var light_col = vec3.fromValues(lights[li][1][0], lights[li][1][1], lights[li][1][2]);
-			vec3.multiply(eq, light_col, eq);
+			vec3.multiply(equation, light_col, equation);
 
 			// sum all lights to get vertex color
-			vec3.add(color, color, eq);
+			vec3.add(color, color, equation);
 		}
 
 		// append color to vertex
@@ -304,7 +309,7 @@ function draw(ctx, vertices, edges){
 		ctx.moveTo(x1, y1);
 		ctx.lineTo(x2, y2);
 		
-		ctx.stroke();
+		//ctx.stroke();
 		
 	}
 
@@ -433,7 +438,7 @@ function start(){
 	
 	console.log("\nlight 1: "+lights[0][0]+" | "+lights[0][1]);
 	console.log("\nlight 2: "+lights[1][0]+" | "+lights[1][1]);
-	*/	
+	*/
 
 	var canvas = document.getElementById("mycanvas");
 	canvas_w = canvas.width;
@@ -449,15 +454,5 @@ function start(){
 
 	draw(ctx, vertices, edges);
 
-	/*
-	//var a = vec3.create();
-	//var b = vec3.create();
 
-	// Vector operations example:
-	var a = vec3.fromValues(1, 2, 3);
-	var b = vec3.fromValues(0, 1, 0);
-
-	var c = vec3.create();
-	vec3.subtract(c, a, b);
-	console.log(a+" - "+b+" = "+c);*/
 }
