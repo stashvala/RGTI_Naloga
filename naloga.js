@@ -156,11 +156,18 @@ function prepareVertices(v){
 	return vex;
 }
 
+function normalizeVector(vec){
+	var length = vec3.length(vec);
+	var normalized = vec3.fromValues(vec[0]/length, vec[1]/length, vec[2]/length);
+
+	return normalized;
+}
+
 //https://en.wikipedia.org/wiki/Phong_reflection_model
 function refreshColors(){
 	v_cnt = 0;
 	for(var i = 0; i < vertices.length; ++i){
-		var vex = vec3.fromValues(vertices[i][0], vertices[i][1], vertices[i][2]);
+		var vex_pos = vec3.fromValues(vertices[i][0], vertices[i][1], vertices[i][2]);
 
 		var color = vec3.create();
 		for(var li = 0; li < lights.length; ++li){
@@ -168,7 +175,9 @@ function refreshColors(){
 			var normal_vec = vec3.fromValues(normals[i][0], normals[i][1], normals[i][2]);
 			var light_pos = vec3.fromValues(lights[li][0][0], lights[li][0][1], lights[li][0][2]);
 			var light_vec = vec3.create();
-			vec3.subtract(light_vec, vex, light_pos);
+			vec3.subtract(light_vec, vex_pos, light_pos);
+			light_vec = normalizeVector(light_vec); // normalize
+			normal_vec = normalizeVector(normal_vec); // normalize
 			
 			//Kd * (Li * n) = first_part
 			var Lm_n = vec3.create();
@@ -182,11 +191,13 @@ function refreshColors(){
 			vec3.multiply(Rm_V, Rm_V, two);
 			vec3.multiply(Rm_V, Rm_V, normal_vec);
 			vec3.subtract(Rm_V, Rm_V, light_vec);
+			Rm_V = normalizeVector(Rm_V); // normalize
 	
 			// Rm * V
 			var cam_vec = vec3.create();
 			var cam_pos = vec3.fromValues(cameraLocation[0], cameraLocation[1], cameraLocation[2]);
-			vec3.subtract(cam_vec, vex, cam_pos);
+			vec3.subtract(cam_vec, vex_pos, cam_pos);
+			cam_vec = normalizeVector(cam_vec); //normalize
 			vec3.multiply(Rm_V, Rm_V, cam_vec);
 
 			// (Rm * V) ^ alpha * Ks = second_part
@@ -201,10 +212,11 @@ function refreshColors(){
 			var light_col = vec3.fromValues(lights[li][1][0], lights[li][1][1], lights[li][1][2]);
 			vec3.multiply(eq, light_col, eq);
 
-			//r = lights[li][1][0]*(Kd_rgb[0]*(rLm*n[i][0])+Ks_rgb[0]*Math.pow((), shine_constant));
+			// sum all lights to get vertex color
 			vec3.add(color, color, eq);
 		}
 
+		// append color to vertex
 		verticesColors[v_cnt] = color;
 		v_cnt++;
 		
@@ -251,7 +263,7 @@ function draw(ctx, vertices, edges){
 	 
 	// set context
 	ctx.beginPath();
-	ctx.lineWidth = 3;
+	ctx.lineWidth = 5;
 	ctx.tr;
 	//ctx.fillStyle = "black";
 
@@ -275,20 +287,17 @@ function draw(ctx, vertices, edges){
   		// console.log(i+1+": x = "+x2+", y = "+y2);
 
 		var grad = ctx.createLinearGradient(x1, y1, x2, y2);
-		
-		// console.log("\ne1: "+vertex1);
-		// console.log("\ne2: "+vertex2);
 
 		var color1 = vec3.create();
 		color1 = verticesColors[edges[i]-1];
 		var color2 = vec3.create();
 		color2 = verticesColors[edges[i+1]-1];
 
-		// console.log("\ncolor1: "+color1);
-		// console.log("color2: "+color2);
+		console.log(i+": color1 = "+color1);
+		console.log(i+1+": color2 = "+color2+"\n");
 
-		grad.addColorStop(0, rgb(color1[0], color1[1], color1[2]));
-		grad.addColorStop(1, rgb(color2[0], color2[1], color2[2]));
+		grad.addColorStop(0, rgb(color1[0]*255, color1[1]*255, color1[2]*255));
+		grad.addColorStop(1, rgb(color2[0]*255, color2[1]*255, color2[2]*255));
 
 		ctx.strokeStyle = grad;
 
