@@ -15,16 +15,24 @@ var Ks_rgb = vec3.create();
 
 var shine_constant;
 
-
 // Model, view, projection and transformation matrices
 var mMatrix = mat4.create();
 var vMatrix = mat4.create();
 var pMatrix = mat4.create();
 var tMatrix = mat4.create();
 
+// User movement
+var mouseX;
+var mouseY;
+var mousePressed = false;
+var rotX = 0;
+var rotY = 0;
+var rotZ = 0;
+
 // Canvas
 var canvas_w;
 var canvas_h;
+var ctx;
 
 // Drawing
 var extend = 200;
@@ -139,8 +147,6 @@ function prepareVertices(v){
 		newVex[i][3] = 1;
 	}
 	
-	//debugPrintArr(newVex);
-	
 	// convert to 1d arr for easier drawing
 	vex = [];
 	cnt = 0;
@@ -151,7 +157,6 @@ function prepareVertices(v){
 		}
 	}
 	
-	//debugPrintMat(vex);
 	return vex;
 }
 
@@ -174,24 +179,12 @@ function refreshColors(){
 			vec3.normalize(light_vec, light_vec); // normalize
 			vec3.normalize(normal_vec, normal_vec); // normalize
 			
-			//Kd * (Li dot N) = first_part
-			// var Lm_n = vec3.create();
-			// vec3.multiply(Lm_n, light_vec, normal_vec);
-			// vec3.multiply(Lm_n, Lm_n, Kd_rgb);
-
+			// (Lm dot N) * Kd_rgb = first_part
 			var Lm_N = vec3.dot(light_vec, normal_vec);
 			var Lm_N_Kd = vec3.create();
 			vec3.scale(Lm_N_Kd, Kd_rgb, Lm_N);
 
 			// Rm = 2 * (Lm dot N) * N - Lm
-			// var Rm_V = vec3.create();
-			// vec3.multiply(Rm_V, light_vec, normal_vec);
-			// var two = vec3.fromValues(2, 2, 2);
-			// vec3.multiply(Rm_V, Rm_V, two);
-			// vec3.multiply(Rm_V, Rm_V, normal_vec);
-			// vec3.subtract(Rm_V, Rm_V, light_vec);
-			// vec3.normalize(Rm_V, Rm_V) // normalize
-
 			var Rm = vec3.create();
 			vec3.scale(Rm, normal_vec, (2 * Lm_N));
 			vec3.subtract(Rm, Rm, light_vec);
@@ -228,33 +221,6 @@ function refreshColors(){
 	}
 }
 
-function debugPrintArr(name, arr){
-	console.log(name+":");
-	for(i = 0; i < arr.length; ++i){
-		var str = "[ ";
-		for(j = 0; j < arr[i].length; ++j){
-			str += arr[i][j] + " ";
-		}
-		str += "]";
-		console.log(str);
-	}
-	console.log("\n");
-}
-
-function debugPrintMat(name, mat){
-	console.log(name+":");
-	var str = "[ ";
-	for(i = 0; i < mat.length; ++i){
-		str += mat[i] + " ";
-		if((i+1) % 4 === 0){
-			str += "]";
-			console.log(str);
-			var str = "[ ";
-		}
-	}	
-	console.log("\n");
-}
-
 function rgb (r, g, b) {
 	r = Math.floor(r);
 	g = Math.floor(g);
@@ -264,19 +230,19 @@ function rgb (r, g, b) {
 }
 
 // ctx - context
-function draw(ctx, vertices, edges){
+function draw(){
 	 
 	// set context
 	ctx.beginPath();
 	ctx.lineWidth = 5;
-	ctx.tr;
+	ctx.clearRect(640, -360, -canvas_w, canvas_h);
 	//ctx.fillStyle = "black";
 
 	refreshColors();
 
 	// prepare vertices
 	v = prepareVertices(vertices);
-	// console.log("vector: "+v);
+	console.log("vector: "+v.length+" "+edges.length);
 
 	for (i = 0; i < edges.length; i = i+2){
 		var vertex1 = (edges[i]-1)*4;
@@ -315,6 +281,48 @@ function draw(ctx, vertices, edges){
 
 	ctx.stroke();
 }
+
+function onMouseClickEvent(event){
+	if(event.which == 1 || event.which == 2 || event.which == 3){
+		mousePressed = true;
+		mouseX = event.pageX;
+		mouseY = event.pageY;
+	}
+	else{
+		alert("Fancy mouse you got there, mate!");
+	}
+}
+
+function onMouseRelease(){
+	mousePressed = false;
+
+	mat4.multiply(mMatrix, mMatrix, rotateX(rotX));
+	mat4.multiply(mMatrix, mMatrix, rotateY(rotY));
+
+	draw();
+
+	rotX = 0;
+	rotY = 0;
+}
+
+function onMouseMove(event){
+	if(mousePressed == true){
+		rotX = rotX + -(mouseY-event.pageY)/300;
+        rotY = rotY + -(mouseX-event.pageX)/300;
+        
+        mat4.multiply(mMatrix, mMatrix, rotateX(rotX));
+        mat4.multiply(mMatrix, mMatrix,rotateY(rotY));
+        
+        draw();
+        
+        mat4.multiply(mMatrix, mMatrix, rotateY(-rotY));
+        mat4.multiply(mMatrix, mMatrix, rotateX(-rotX));
+       
+        mouseX = event.pageX;
+        mouseY = event.pageY;
+	}
+}
+
 
 function readFile(){
 	var file = document.getElementById("fileInput").files[0];
@@ -373,6 +381,11 @@ function parseInput(input){
 
 			edges[++edg_cnt] = parseFloat(edg[1]);
 			edges[++edg_cnt] = parseFloat(edg[2]);
+
+			edges[++edg_cnt] = parseFloat(edg[1]);
+            edges[++edg_cnt] = parseFloat(edg[3]);
+
+            edges[++edg_cnt] = parseFloat(edg[2]);
             edges[++edg_cnt] = parseFloat(edg[3]);
         }
         else if(lines[i].charAt(0) == "m"){
@@ -444,7 +457,7 @@ function start(){
 	canvas_w = canvas.width;
 	canvas_h = canvas.height;
 	
-    var ctx = canvas.getContext("2d");
+    ctx = canvas.getContext("2d");
 	
 	ctx.translate(640,360);
 	ctx.scale(1, -1); // change y direction to up
@@ -452,7 +465,13 @@ function start(){
 	//transformModel();
 	setView();
 
-	draw(ctx, vertices, edges);
+	draw();
+
+	// http://www.w3schools.com/jsref/dom_obj_event.asp
+	// http://www.w3.org/TR/DOM-Level-3-Events/
+	canvas.addEventListener('mousedown', onMouseClickEvent, false);
+    document.addEventListener('mousemove', onMouseMove, false);
+    document.addEventListener('mouseup', onMouseRelease, false);
 
 
 }

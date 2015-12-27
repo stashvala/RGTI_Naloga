@@ -10,11 +10,12 @@
 </head>
 	<body>  
 		<div id="content">
-				<canvas id="mycanvas" width="1200px" height="600px">
+				<canvas id="mycanvas" width="1200px" height="600px" style="border:2px solid #000000;">
 					No <code>&lt;canvas&gt;</code> suppport in your browser.               
 				</canvas>
 		</div>
-		<div>
+		<div style="position: absolute; left: 50%;">
+			<p>Za rotacijo objekta pridrzite levi, desni ali sredinski gumb na miski</p>
 			<input type="file" id="fileInput">
 			<br>
 			<button onclick="readFile()">Draw me like one of your French girls</button>
