@@ -135,6 +135,8 @@ function prepareVertices(v){
 		}
 		// console.log("vex "+i+": "+ newVex[i]);
 	}
+
+	refreshColors(newVex);
 	
 	// normalize with 'w'
 	for(i = 0; i < newVex.length; ++i){
@@ -162,10 +164,11 @@ function prepareVertices(v){
 
 
 //https://en.wikipedia.org/wiki/Phong_reflection_model
-function refreshColors(){
+function refreshColors(vex){
 	v_cnt = 0;
 	for(var i = 0; i < vertices.length; ++i){
-		var vex_pos = vec3.fromValues(vertices[i][0], vertices[i][1], vertices[i][2]);
+		//var vex_pos = vec3.fromValues(vertices[i][0], vertices[i][1], vertices[i][2]);
+		var vex_pos = vec3.fromValues(vex[i][0], vex[i][1], vex[i][2]);
 
 		var color = vec3.create();
 		for(var li = 0; li < lights.length; ++li){
@@ -238,11 +241,11 @@ function draw(){
 	ctx.clearRect(640, -360, -canvas_w, canvas_h);
 	//ctx.fillStyle = "black";
 
-	refreshColors();
-
-	// prepare vertices
 	v = prepareVertices(vertices);
-	console.log("vector: "+v.length+" "+edges.length);
+
+	//refreshColors(v);
+	
+	//console.log("vector: "+v.length+" "+edges.length);
 
 	for (i = 0; i < edges.length; i = i+2){
 		var vertex1 = (edges[i]-1)*4;
